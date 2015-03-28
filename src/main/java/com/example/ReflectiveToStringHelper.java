@@ -339,6 +339,20 @@ public class ReflectiveToStringHelper {
         }
 
         /**
+         * Convenience method to set all visibilities to one value.
+         *
+         * @param allVisibilities Status of all visibilities
+         * @return this
+         * @see #publics(boolean)
+         * @see #protecteds(boolean)
+         * @see #packages(boolean)
+         * @see #privates(boolean)
+         */
+        public Include allVisibilities(final boolean allVisibilities) {
+            this.publics = this.protecteds = this.packages = this.privates = allVisibilities;
+        }
+
+        /**
          * Ensure that any field with the given name, class, and value is shown in the toString.
          *
          * @param name  Name of field to ensure
