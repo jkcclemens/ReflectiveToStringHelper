@@ -350,6 +350,7 @@ public class ReflectiveToStringHelper {
          */
         public Include allVisibilities(final boolean allVisibilities) {
             this.publics = this.protecteds = this.packages = this.privates = allVisibilities;
+            return this;
         }
 
         /**
