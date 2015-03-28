@@ -27,9 +27,11 @@ public class ReflectiveToStringHelper {
     private final StringBuilder sb = new StringBuilder();
     private final Map<String, String> fields = Maps.newHashMap();
     private String separator = ",";
+    private String equality = "=";
+    private String hashCodeSymbol = "@";
+    private boolean hashCode;
     private Comparator<? super Field> fieldComparator;
     private Comparator<? super Entry<String, String>> entryComparator;
-    private String equality = "=";
 
     /**
      * Should not be constructed during runtime.
@@ -38,8 +40,6 @@ public class ReflectiveToStringHelper {
      * @see #of(Object, Include)
      */
     private ReflectiveToStringHelper(final Class<?> clazz, final Object instance, final Include include) {
-        Preconditions.checkNotNull(clazz, "clazz was null");
-        Preconditions.checkNotNull(instance, "instance was null");
         Preconditions.checkNotNull(include, "include was null");
         this.clazz = clazz;
         this.instance = instance;
@@ -86,6 +86,7 @@ public class ReflectiveToStringHelper {
      * <p>Note that this does not add "&#123;" or "&#125;".
      */
     private void addDeclaredFields() {
+        if (this.instance == null) return;
         final Field[] fieldArray = this.clazz.getDeclaredFields();
         final List<Field> fields;
         if (this.fieldComparator != null) {
@@ -280,13 +281,41 @@ public class ReflectiveToStringHelper {
      * @return Generated string
      */
     public String generate() {
+        if (this.instance == null) {
+            return "null";
+        }
         this.appendClassName();
+        if (this.hashCode) {
+            this.sb.append(this.hashCodeSymbol).append(this.instance.hashCode());
+        }
         this.sb.append("{");
         this.appendFields();
         this.sb.append("}");
         final String generated = this.sb.toString();
         this.sb.setLength(0);
         return generated;
+    }
+
+    /**
+     * Sets whether to include the hash code in the toString or not.
+     *
+     * @param hashCode Status of including hashCod
+     * @return this
+     */
+    public ReflectiveToStringHelper hashCode(final boolean hashCode) {
+        this.hashCode = hashCode;
+        return this;
+    }
+
+    /**
+     * Sets what the hashCode symbol should be. Default to "@"
+     *
+     * @param symbol Symbol to use for the hashCode
+     * @return this
+     */
+    public ReflectiveToStringHelper hashCodeSymbol(final String symbol) {
+        this.hashCodeSymbol = symbol;
+        return this;
     }
 
     /**
