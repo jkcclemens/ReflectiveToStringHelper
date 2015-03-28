@@ -69,9 +69,8 @@ public class ReflectiveToStringHelper {
      * @see #of(Object)
      */
     public static ReflectiveToStringHelper of(final Object o, final Include include) {
-        Preconditions.checkNotNull(o, "o was null");
         Preconditions.checkNotNull(include, "include was null");
-        return new ReflectiveToStringHelper(o.getClass(), o, include);
+        return new ReflectiveToStringHelper(o == null ? null : o.getClass(), o, include);
     }
 
     /**
@@ -286,7 +285,7 @@ public class ReflectiveToStringHelper {
         }
         this.appendClassName();
         if (this.hashCode) {
-            this.sb.append(this.hashCodeSymbol).append(this.instance.hashCode());
+            this.sb.append(this.hashCodeSymbol).append(Integer.toHexString(this.instance.hashCode()));
         }
         this.sb.append("{");
         this.appendFields();

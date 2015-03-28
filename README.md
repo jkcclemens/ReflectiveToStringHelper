@@ -200,4 +200,25 @@ log(
         Include.create().publics(true).ensure("partner", Person.class).custom("inARelationship", joe.partner != null)
     ).entryComparator((e1, e2) -> e1.getKey().compareTo(e2.getKey()))
 );
+// 20. What about a missing person?
+// 20. null
+log(
+    ReflectiveToStringHelper.of(
+        null
+    )
+);
+// 21. Joe's hash code is interesting.
+// 21. Person@66a29884{firstName=Joe,lastName=Schmoe,age=23.4,height=6.083}
+log(
+    ReflectiveToStringHelper.of(
+        joe
+    ).hashCode(true)
+);
+// 22. Custom symbols!
+// 22. Person#66a29884{firstName is Joe; lastName is Schmoe; age is 23.4; height is 6.083}
+log(
+    ReflectiveToStringHelper.of(
+        joe
+    ).hashCode(true).hashCodeSymbol("#").separator("; ").equality(" is ")
+);
 ```
