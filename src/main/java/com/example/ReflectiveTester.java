@@ -8,8 +8,8 @@ public final class ReflectiveTester {
 
         public String firstName = "Joe";
         public String lastName = "Schmoe";
-        public final float height = 6.083F; // Joe is done growing. He's 6'1".
         public float age = 23.4F;
+        public final float height = 6.083F; // Joe is done growing. He's 6'1".
         protected int numberOfFriends = 3;
         protected int numberOfExes = 2;
         private boolean inARelationship = false;

@@ -12,6 +12,7 @@ Rather than drone on about how it works, take a look at some examples!
 
 ```java
 public class Person {
+
     public String firstName = "Joe";
     public String lastName = "Schmoe";
     public float age = 23.4F;
@@ -19,6 +20,7 @@ public class Person {
     protected int numberOfFriends = 3;
     protected int numberOfExes = 2;
     private boolean inARelationship = false;
+    private Person partner = null;
     private boolean thinksHeIsGreat = true;
     private volatile int timesCried = 100;
 
@@ -26,8 +28,14 @@ public class Person {
     public String getLastSaidSentence() {
         return "Howdy!";
     }
+
+    @Override
+    public String toString() {
+        return ReflectiveToStringHelper.of(this);
+    }
 }
 
+public static void main(final String[] args) {
 final Person joe = new Person();
 // 1. Let's only print what someone in the public would know about Joe.
 // 1. Person{firstName=Joe,lastName=Schmoe,age=23.4,height=6.083}
@@ -37,7 +45,7 @@ log(
     )
 );
 // 2. How about his friends?
-// 2. Person{firstName=Joe,lastName=Schmoe,age=23.4,height=6.083,numberOfFriends=3,numberOfExes=2}
+// 2. Person{height=6.083,firstName=Joe,lastName=Schmoe,age=23.4,numberOfFriends=3,numberOfExes=2}
 log(
     ReflectiveToStringHelper.of(
         joe,
@@ -45,7 +53,7 @@ log(
     )
 );
 // 3. The things only Joe knows
-// 3. Person{inARelationship=false,thinksHeIsGreat=true,timesCried=100}
+// 3. Person{inARelationship=false,partner=null,thinksHeIsGreat=true,timesCried=100}
 log(
     ReflectiveToStringHelper.of(
         joe,
@@ -69,11 +77,11 @@ log(
     )
 );
 // 6. Joe is a really open guy, except about his exes.
-// 6. Person{firstName=Joe,lastName=Schmoe,age=23.4,height=6.083,numberOfFriends=3,inARelationship=false,thinksHeIsGreat=true,timesCried=100}
+// 6. Person{height=6.083,firstName=Joe,lastName=Schmoe,age=23.4,numberOfFriends=3,inARelationship=false,partner=null,thinksHeIsGreat=true,timesCried=100}
 log(
     ReflectiveToStringHelper.of(
         joe,
-        Include.create().publics(true).privates(true).packages(true).protecteds(true).exclude("numberOfExes")
+        Include.create().allVisibilities(true).exclude("numberOfExes")
     )
 );
 // 7. Joe isn't really a numbers guy with his family.
@@ -109,7 +117,7 @@ log(
     )
 );
 // 11. Joe just can't control what makes him cry. He doesn't want people to know.
-// 11. Person{inARelationship=false,thinksHeIsGreat=true}
+// 11. Person{inARelationship=false,partner=null,thinksHeIsGreat=true}
 log(
     ReflectiveToStringHelper.of(
         joe,
@@ -117,7 +125,7 @@ log(
     )
 );
 // 12. Joe doesn't want to appear arrogant or weak!
-// 12. Person{inARelationship=false}
+// 12. Person{inARelationship=false,partner=null}
 log(
     ReflectiveToStringHelper.of(
         joe,
@@ -138,6 +146,23 @@ log(
     ReflectiveToStringHelper.of(
         joe,
         Include.create().ensure("inARelationship", Boolean.TYPE, false)
+    )
+);
+// 15. Joe likes to alphabetize his attributes.
+// Person{age=23.4,firstName=Joe,height=6.083,inARelationship=false,lastName=Schmoe,numberOfExes=2,numberOfFriends=3,partner=null,thinksHeIsGreat=true,timesCried=100}
+log(
+    ReflectiveToStringHelper.of(
+        joe,
+        Include.create().allVisibilities(true),
+        (f1, f2) -> f1.getName().compareTo(f2.getName())
+    )
+);
+// 16. Joe thinks the empty parts of his life don't need sharing.
+// 16. Person{height=6.083,firstName=Joe,lastName=Schmoe,age=23.4,numberOfFriends=3,numberOfExes=2,inARelationship=false,thinksHeIsGreat=true,timesCried=100}
+log(
+    ReflectiveToStringHelper.of(
+        joe,
+        Include.create().allVisibilities(true).omitNullValues(true)
     )
 );
 ```
