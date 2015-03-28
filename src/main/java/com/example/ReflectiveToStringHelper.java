@@ -25,8 +25,10 @@ public class ReflectiveToStringHelper {
     private final Include include;
     private final StringBuilder sb = new StringBuilder();
     private final Map<String, String> fields = Maps.newHashMap();
+    private String separator = ",";
     private Comparator<? super Field> fieldComparator;
     private Comparator<? super Entry<String, String>> entryComparator;
+    private String equality = "=";
 
     /**
      * Should not be constructed during runtime.
@@ -114,27 +116,6 @@ public class ReflectiveToStringHelper {
         this.sb.append(this.clazz.getSimpleName());
     }
 
-    /**
-     * Appends the given field to the StringBuilder. This uses the format {@code fieldName=fieldValue}. If an exception
-     * occurs when getting the value of the field, the format will be {@code fieldName={ExceptionName:Message}}.
-     * <p>This does not check with {@code includes} to see if it should be used.
-     *
-     * @param field Field to append
-     */
-    private void appendField(final Field field, final Tuple<Object, Throwable> value) {
-        this.sb.append(this.getFieldName(field)).append("=");
-        if (value.left == null && value.right != null) {
-            this.sb
-                .append("{")
-                .append(value.right.getClass().getSimpleName())
-                .append(":")
-                .append(value.right.getMessage())
-                .append("}");
-        } else {
-            this.sb.append(value.left == null ? "null" : value.left.toString());
-        }
-    }
-
     private void appendFields() {
         Stream<Entry<String, String>> stream = this.fields.entrySet().stream();
         if (this.entryComparator != null) {
@@ -142,8 +123,8 @@ public class ReflectiveToStringHelper {
         }
         this.sb.append(
             stream
-                .map(e -> e.getKey() + "=" + e.getValue())
-                .collect(Collectors.joining(","))
+                .map(e -> e.getKey() + this.equality + e.getValue())
+                .collect(Collectors.joining(this.separator))
         );
     }
 
@@ -264,6 +245,17 @@ public class ReflectiveToStringHelper {
     }
 
     /**
+     * Sets the equality symbol in the toString. Default is "="
+     *
+     * @param equality Equality symbol for fields
+     * @return this
+     */
+    public ReflectiveToStringHelper equality(final String equality) {
+        this.equality = equality;
+        return this;
+    }
+
+    /**
      * Provides a comparator for the declared fields. To unset, use null.
      *
      * @param fieldComparator Comparator for declared fields
@@ -291,14 +283,14 @@ public class ReflectiveToStringHelper {
     }
 
     /**
-     * Returns the result of {@link #generate()}.
+     * Sets the field separator in the toString. Default is ","
      *
-     * @return Generated toString
-     * @see #generate()
+     * @param separator Separator for fields
+     * @return this
      */
-    @Override
-    public String toString() {
-        return this.generate();
+    public ReflectiveToStringHelper separator(final String separator) {
+        this.separator = separator;
+        return this;
     }
 
     /**
@@ -730,6 +722,17 @@ public class ReflectiveToStringHelper {
             final Tuple other = (Tuple) obj;
             return Objects.equals(this.left, other.left) && Objects.equals(this.right, other.right);
         }
+    }
+
+    /**
+     * Returns the result of {@link #generate()}.
+     *
+     * @return Generated toString
+     * @see #generate()
+     */
+    @Override
+    public String toString() {
+        return this.generate();
     }
 
 
