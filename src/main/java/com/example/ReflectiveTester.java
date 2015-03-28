@@ -6,9 +6,9 @@ public final class ReflectiveTester {
 
     public static class Person {
 
-        public String firstName = "Joe";
-        public String lastName = "Schmoe";
-        public float age = 23.4F;
+        public String firstName;
+        public String lastName;
+        public float age;
         public final float height = 6.083F; // Joe is done growing. He's 6'1".
         protected int numberOfFriends = 3;
         protected int numberOfExes = 2;
@@ -17,6 +17,16 @@ public final class ReflectiveTester {
         private boolean thinksHeIsGreat = true;
         private volatile int timesCried = 100;
 
+        public Person(final String firstName, final String lastName, final float age) {
+            this.firstName = firstName;
+            this.lastName = lastName;
+            this.age = age;
+        }
+
+        public void updateRelationshipStatus() {
+            this.inARelationship = this.partner != null;
+        }
+
         // As you'll see, we only work with fields. This never shows up anywhere.
         public String getLastSaidSentence() {
             return "Howdy!";
@@ -24,7 +34,7 @@ public final class ReflectiveTester {
 
         @Override
         public String toString() {
-            return ReflectiveToStringHelper.of(this);
+            return ReflectiveToStringHelper.of(this).generate();
         }
     }
 
@@ -35,7 +45,7 @@ public final class ReflectiveTester {
     }
 
     public static void main(final String[] args) {
-        final Person joe = new Person();
+        final Person joe = new Person("Joe", "Schmoe", 23.4F);
         // 1. Let's only print what someone in the public would know about Joe.
         // 1. Person{firstName=Joe,lastName=Schmoe,age=23.4,height=6.083}
         log(
@@ -44,7 +54,7 @@ public final class ReflectiveTester {
             )
         );
         // 2. How about his friends?
-        // 2. Person{height=6.083,firstName=Joe,lastName=Schmoe,age=23.4,numberOfFriends=3,numberOfExes=2}
+        // 2. Person{firstName=Joe,lastName=Schmoe,numberOfFriends=3,numberOfExes=2,age=23.4,height=6.083}
         log(
             ReflectiveToStringHelper.of(
                 joe,
@@ -52,7 +62,7 @@ public final class ReflectiveTester {
             )
         );
         // 3. The things only Joe knows
-        // 3. Person{inARelationship=false,partner=null,thinksHeIsGreat=true,timesCried=100}
+        // 3. Person{thinksHeIsGreat=true,timesCried=100,partner=null,inARelationship=false}
         log(
             ReflectiveToStringHelper.of(
                 joe,
@@ -60,7 +70,7 @@ public final class ReflectiveTester {
             )
         );
         // 4. What someone in the public knows and ONLY his amount of friends
-        // 4. Person{firstName=Joe,lastName=Schmoe,age=23.4,height=6.083,numberOfFriends=3}
+        // 4. Person{firstName=Joe,lastName=Schmoe,numberOfFriends=3,age=23.4,height=6.083
         log(
             ReflectiveToStringHelper.of(
                 joe,
@@ -68,7 +78,7 @@ public final class ReflectiveTester {
             )
         );
         // 5. Joe wants people to think he's in a relationship
-        // 5. Person{firstName=Joe,lastName=Schmoe,age=23.4,height=6.083,inARelationship=true}
+        // 5. Person{firstName=Joe,lastName=Schmoe,inARelationship=true,age=23.4,height=6.083}
         log(
             ReflectiveToStringHelper.of(
                 joe,
@@ -76,7 +86,7 @@ public final class ReflectiveTester {
             )
         );
         // 6. Joe is a really open guy, except about his exes.
-        // 6. Person{height=6.083,firstName=Joe,lastName=Schmoe,age=23.4,numberOfFriends=3,inARelationship=false,partner=null,thinksHeIsGreat=true,timesCried=100}
+        // 6. Person{thinksHeIsGreat=true,firstName=Joe,lastName=Schmoe,timesCried=100,partner=null,inARelationship=false,numberOfFriends=3,age=23.4,height=6.083}
         log(
             ReflectiveToStringHelper.of(
                 joe,
@@ -92,7 +102,7 @@ public final class ReflectiveTester {
             )
         );
         // 8. Joe wants everyone to know the private on/off parts of his life, but nothing else.
-        // 8. Person{inARelationship=false,thinksHeIsGreat=true}
+        // 8. Person{thinksHeIsGreat=true,inARelationship=false}
         log(
             ReflectiveToStringHelper.of(
                 joe,
@@ -116,7 +126,7 @@ public final class ReflectiveTester {
             )
         );
         // 11. Joe just can't control what makes him cry. He doesn't want people to know.
-        // 11. Person{inARelationship=false,partner=null,thinksHeIsGreat=true}
+        // 11. Person{thinksHeIsGreat=true,partner=null,inARelationship=false}
         log(
             ReflectiveToStringHelper.of(
                 joe,
@@ -124,7 +134,7 @@ public final class ReflectiveTester {
             )
         );
         // 12. Joe doesn't want to appear arrogant or weak!
-        // 12. Person{inARelationship=false,partner=null}
+        // 12. Person{partner=null,inARelationship=false}
         log(
             ReflectiveToStringHelper.of(
                 joe,
@@ -148,21 +158,47 @@ public final class ReflectiveTester {
             )
         );
         // 15. Joe likes to alphabetize his attributes.
-        // Person{age=23.4,firstName=Joe,height=6.083,inARelationship=false,lastName=Schmoe,numberOfExes=2,numberOfFriends=3,partner=null,thinksHeIsGreat=true,timesCried=100}
+        // 15. Person{thinksHeIsGreat=true,firstName=Joe,lastName=Schmoe,timesCried=100,partner=null,inARelationship=false,numberOfFriends=3,numberOfExes=2,age=23.4,height=6.083}
         log(
             ReflectiveToStringHelper.of(
                 joe,
-                Include.create().allVisibilities(true),
-                (f1, f2) -> f1.getName().compareTo(f2.getName())
-            )
+                Include.create().allVisibilities(true)
+            ).fieldComparator((f1, f2) -> f1.getName().compareTo(f2.getName()))
         );
         // 16. Joe thinks the empty parts of his life don't need sharing.
-        // 16. Person{height=6.083,firstName=Joe,lastName=Schmoe,age=23.4,numberOfFriends=3,numberOfExes=2,inARelationship=false,thinksHeIsGreat=true,timesCried=100}
+        // 16. Person{thinksHeIsGreat=true,firstName=Joe,lastName=Schmoe,timesCried=100,inARelationship=false,numberOfFriends=3,numberOfExes=2,age=23.4,height=6.083}
         log(
             ReflectiveToStringHelper.of(
                 joe,
                 Include.create().allVisibilities(true).omitNullValues(true)
             )
+        );
+        // 17. Looks like Joe has gone and got himself a girlfriend! He wants everyone to know.
+        // 17. Person{firstName=Joe,lastName=Schmoe,partner=Person{firstName=Jane,lastName=Doe,age=22.3,height=6.083},inARelationship=true,age=23.4,height=6.083}
+        joe.partner = new Person("Jane", "Doe", 22.3F);
+        joe.updateRelationshipStatus();
+        log(
+            ReflectiveToStringHelper.of(
+                joe,
+                Include.create().publics(true).ensure("partner", Person.class).ensure("inARelationship")
+            )
+        );
+        // 18. Note that another way to do the same as 17 would be to remove the inARelationship field and
+        //     updateRelationshipStatus() method, then use a custom to display a fake field in the toString.
+        // 18. Person{firstName=Joe,lastName=Schmoe,partner=Person{firstName=Jane,lastName=Doe,age=22.3,height=6.083},inARelationship=true,age=23.4,height=6.083}
+        log(
+            ReflectiveToStringHelper.of(
+                joe,
+                Include.create().publics(true).ensure("partner", Person.class).custom("inARelationship", joe.partner != null)
+            )
+        );
+        // 19. Alphabetizing custom fields with declared fields.
+        // 19. Person{age=23.4,firstName=Joe,height=6.083,inARelationship=true,lastName=Schmoe,partner=Person{firstName=Jane,lastName=Doe,age=22.3,height=6.083}}
+        log(
+            ReflectiveToStringHelper.of(
+                joe,
+                Include.create().publics(true).ensure("partner", Person.class).custom("inARelationship", joe.partner != null)
+            ).entryComparator((e1, e2) -> e1.getKey().compareTo(e2.getKey()))
         );
     }
 

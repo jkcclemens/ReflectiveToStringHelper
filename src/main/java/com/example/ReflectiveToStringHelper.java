@@ -12,6 +12,7 @@ import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Objects;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 /**
  * A class similar to {@link com.google.common.base.MoreObjects.ToStringHelper}, but it auto-populates the String using
@@ -23,7 +24,9 @@ public class ReflectiveToStringHelper {
     private final Object instance;
     private final Include include;
     private final StringBuilder sb = new StringBuilder();
-    private final Comparator<? super Field> comparator;
+    private final Map<String, String> fields = Maps.newHashMap();
+    private Comparator<? super Field> fieldComparator;
+    private Comparator<? super Entry<String, String>> entryComparator;
 
     /**
      * Should not be constructed during runtime.
@@ -31,11 +34,12 @@ public class ReflectiveToStringHelper {
      * @see #of(Object)
      * @see #of(Object, Include)
      */
-    private ReflectiveToStringHelper(final Class<?> clazz, final Object instance, final Include include, final Comparator<? super Field> comparator) {
+    private ReflectiveToStringHelper(final Class<?> clazz, final Object instance, final Include include) {
         this.clazz = clazz;
         this.instance = instance;
         this.include = include;
-        this.comparator = comparator;
+        this.addDeclaredFields();
+        this.addCustoms();
     }
 
     /**
@@ -46,32 +50,8 @@ public class ReflectiveToStringHelper {
      * @return toString String, ready for returning
      * @see #of(Object, Include)
      */
-    public static String of(final Object o) {
+    public static ReflectiveToStringHelper of(final Object o) {
         return ReflectiveToStringHelper.of(o, Include.create().publics(true));
-    }
-
-    /**
-     * Returns a toString String for the given object, showing fields sorted by {@code comparator}, specified by
-     * {@code include}.
-     *
-     * @param o          Object to generate toString for
-     * @param include    Include object
-     * @param comparator Comparator to sort the fields
-     * @return toString String, ready for returning
-     */
-    public static String of(final Object o, final Include include, final Comparator<? super Field> comparator) {
-        return new ReflectiveToStringHelper(o.getClass(), o, include, comparator).generate();
-    }
-
-    /**
-     * Returns a toString String for the given object, showing public fields sorted by {@code comparator}.
-     *
-     * @param o          Object to generate toString for
-     * @param comparator Comparator to sort the fields
-     * @return toString String, ready for returning
-     */
-    public static String of(final Object o, final Comparator<? super Field> comparator) {
-        return ReflectiveToStringHelper.of(o, Include.create().publics(true), comparator);
     }
 
     /**
@@ -82,8 +62,49 @@ public class ReflectiveToStringHelper {
      * @return toString String, ready for returning
      * @see #of(Object)
      */
-    public static String of(final Object o, final Include include) {
-        return ReflectiveToStringHelper.of(o, include, null);
+    public static ReflectiveToStringHelper of(final Object o, final Include include) {
+        return new ReflectiveToStringHelper(o.getClass(), o, include);
+    }
+
+    /**
+     * Appends the custom fields to the StringBuilder.
+     */
+    private void addCustoms() {
+        this.include.custom.forEach((k, v) -> this.fields.put(k, v == null ? "null" : v.toString()));
+    }
+
+    /**
+     * Appends declared fields to the StringBuilder. This will use {@code includes} to determine which fields to append.
+     * <p>Note that this does not add "&#123;" or "&#125;".
+     */
+    private void addDeclaredFields() {
+        final Field[] fieldArray = this.clazz.getDeclaredFields();
+        final List<Field> fields;
+        if (this.fieldComparator != null) {
+            fields = Arrays.stream(fieldArray).sorted(this.fieldComparator).collect(Collectors.toList());
+        } else {
+            fields = Arrays.asList(fieldArray);
+        }
+        for (final Field field : fields) {
+            final Tuple<Object, Throwable> value = this.getFieldValue(field);
+            if (!this.isSafeToInclude(field, value)) continue;
+            this.addField(field, value);
+        }
+    }
+
+    private void addField(final Field field, final Tuple<Object, Throwable> value) {
+        final StringBuilder valueString = new StringBuilder();
+        if (value.left == null && value.right != null) {
+            valueString
+                .append("{")
+                .append(value.right.getClass().getSimpleName())
+                .append(":")
+                .append(value.right.getMessage())
+                .append("}");
+        } else {
+            valueString.append(value.left == null ? "null" : value.left.toString());
+        }
+        this.fields.put(this.getFieldName(field), valueString.toString());
     }
 
     /**
@@ -91,31 +112,6 @@ public class ReflectiveToStringHelper {
      */
     private void appendClassName() {
         this.sb.append(this.clazz.getSimpleName());
-    }
-
-    /**
-     * Appends declared fields to the StringBuilder. This will use {@code includes} to determine which fields to append.
-     * <p>Note that this does not add "&#123;" or "&#125;".
-     */
-    private void appendDeclaredFields() {
-        final Field[] fieldArray = this.clazz.getDeclaredFields();
-        final List<Field> fields;
-        if (this.comparator != null) {
-            fields = Arrays.stream(fieldArray).sorted(this.comparator).collect(Collectors.toList());
-        } else {
-            fields = Arrays.asList(fieldArray);
-        }
-        int appended = 0;
-        for (final Field field : fields) {
-            final Tuple<Object, Throwable> value = this.getFieldValue(field);
-            if (!this.isSafeToInclude(field, value)) continue;
-            this.appendField(field, value);
-            appended++;
-            this.sb.append(",");
-        }
-        if (appended > 0) {
-            this.sb.delete(this.sb.length() - 1, this.sb.length());
-        }
     }
 
     /**
@@ -139,20 +135,16 @@ public class ReflectiveToStringHelper {
         }
     }
 
-    /**
-     * Produces the String for use with a toString method. This will populate the internal StringBuilder and then clear
-     * it.
-     *
-     * @return Generated string
-     */
-    private String generate() {
-        this.appendClassName();
-        this.sb.append("{");
-        this.appendDeclaredFields();
-        this.sb.append("}");
-        final String generated = this.sb.toString();
-        this.sb.setLength(0);
-        return generated;
+    private void appendFields() {
+        Stream<Entry<String, String>> stream = this.fields.entrySet().stream();
+        if (this.entryComparator != null) {
+            stream = stream.sorted(this.entryComparator);
+        }
+        this.sb.append(
+            stream
+                .map(e -> e.getKey() + "=" + e.getValue())
+                .collect(Collectors.joining(","))
+        );
     }
 
     /**
@@ -260,6 +252,56 @@ public class ReflectiveToStringHelper {
     }
 
     /**
+     * Provides a comparator for the declared and custom fields, represented by Entries. The key is the name of the
+     * field, and the value is the String representation of the value.
+     *
+     * @param entryComparator Comparator for declared and custom fields
+     * @return this
+     */
+    public ReflectiveToStringHelper entryComparator(final Comparator<? super Entry<String, String>> entryComparator) {
+        this.entryComparator = entryComparator;
+        return this;
+    }
+
+    /**
+     * Provides a comparator for the declared fields. To unset, use null.
+     *
+     * @param fieldComparator Comparator for declared fields
+     * @return this
+     */
+    public ReflectiveToStringHelper fieldComparator(final Comparator<? super Field> fieldComparator) {
+        this.fieldComparator = fieldComparator;
+        return this;
+    }
+
+    /**
+     * Produces the String for use with a toString method. This will populate the internal StringBuilder and then clear
+     * it.
+     *
+     * @return Generated string
+     */
+    public String generate() {
+        this.appendClassName();
+        this.sb.append("{");
+        this.appendFields();
+        this.sb.append("}");
+        final String generated = this.sb.toString();
+        this.sb.setLength(0);
+        return generated;
+    }
+
+    /**
+     * Returns the result of {@link #generate()}.
+     *
+     * @return Generated toString
+     * @see #generate()
+     */
+    @Override
+    public String toString() {
+        return this.generate();
+    }
+
+    /**
      * Class indicating what should be included by {@link ReflectiveToStringHelper}.
      */
     public static class Include {
@@ -275,6 +317,7 @@ public class ReflectiveToStringHelper {
         private final Map<String, Tuple<Class<?>, Object>> ensureNamesClassesAndValues = Maps.newHashMap();
         private final Map<String, Tuple<Class<?>, Object>> excludeNamesClassesAndValues = Maps.newHashMap();
         private final Map<String, String> mappedNames = Maps.newHashMap();
+        private final Map<String, Object> custom = Maps.newHashMap();
         private boolean omitNullValues;
         /**
          * Should public fields be included?
@@ -354,6 +397,19 @@ public class ReflectiveToStringHelper {
          */
         public Include allVisibilities(final boolean allVisibilities) {
             this.publics = this.protecteds = this.packages = this.privates = allVisibilities;
+            return this;
+        }
+
+        /**
+         * Adds a custom value to the toString.
+         *
+         * @param key   Name (key) of custom value
+         * @param value Value custom key
+         * @return this
+         * @see #remove(String)
+         */
+        public Include custom(final String key, final Object value) {
+            this.custom.put(key, value);
             return this;
         }
 
@@ -633,6 +689,18 @@ public class ReflectiveToStringHelper {
         }
 
         /**
+         * The functional opposite of {@link #custom(String, Object)}. This removes a custom value.
+         *
+         * @param key Key to remove
+         * @return this
+         * @see #custom(String, Object)
+         */
+        public Include remove(final String key) {
+            this.custom.remove(key);
+            return this;
+        }
+
+        /**
          * Removes the mapping of the name of a field.
          *
          * @param originalName Name of the field that was mapped
@@ -663,5 +731,6 @@ public class ReflectiveToStringHelper {
             return Objects.equals(this.left, other.left) && Objects.equals(this.right, other.right);
         }
     }
+
 
 }
