@@ -83,7 +83,7 @@ public class ReflectiveToStringHelper {
      * @see #of(Object)
      */
     public static String of(final Object o, final Include include) {
-        return new ReflectiveToStringHelper(o.getClass(), o, include, null).generate();
+        return ReflectiveToStringHelper.of(o, include, null);
     }
 
     /**
