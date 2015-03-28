@@ -127,7 +127,7 @@ public class ReflectiveToStringHelper {
      */
     private void appendField(final Field field, final Tuple<Object, Throwable> value) {
         this.sb.append(this.getFieldName(field)).append("=");
-        if (value.left == null) {
+        if (value.left == null && value.right != null) {
             this.sb
                 .append("{")
                 .append(value.right.getClass().getSimpleName())
@@ -135,7 +135,7 @@ public class ReflectiveToStringHelper {
                 .append(value.right.getMessage())
                 .append("}");
         } else {
-            this.sb.append(value.left.toString());
+            this.sb.append(value.left == null ? "null" : value.left.toString());
         }
     }
 
@@ -198,6 +198,9 @@ public class ReflectiveToStringHelper {
     private boolean isSafeToInclude(final Field field, final Tuple<Object, Throwable> value) {
         final String name = field.getName();
         if (value.right == null && this.include.excludeValues.contains(value.left)) {
+            return false;
+        }
+        if (this.include.omitNullValues && value.left == null) {
             return false;
         }
         if (this.include.excludeNames.contains(name) || this.include.excludeClasses.contains(field.getType())) {
@@ -272,6 +275,7 @@ public class ReflectiveToStringHelper {
         private final Map<String, Tuple<Class<?>, Object>> ensureNamesClassesAndValues = Maps.newHashMap();
         private final Map<String, Tuple<Class<?>, Object>> excludeNamesClassesAndValues = Maps.newHashMap();
         private final Map<String, String> mappedNames = Maps.newHashMap();
+        private boolean omitNullValues;
         /**
          * Should public fields be included?
          */
@@ -559,6 +563,20 @@ public class ReflectiveToStringHelper {
          */
         public Include map(final String originalName, final String newName) {
             this.mappedNames.put(originalName, newName);
+            return this;
+        }
+
+        /**
+         * Handles the appropriate omission of fields with values that are null.
+         * <p>If null-value fields are to be omitted (true), any field which has a value equating to null will not
+         * appear in the toString.
+         * <p>If null-value fields are to be kept (false, default), the toString will have no discernible change.
+         *
+         * @param omitNullValues Status of omitting null-value fields
+         * @return this
+         */
+        public Include omitNullValues(final boolean omitNullValues) {
+            this.omitNullValues = omitNullValues;
             return this;
         }
 
