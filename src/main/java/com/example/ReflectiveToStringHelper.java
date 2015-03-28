@@ -1,5 +1,6 @@
 package com.example;
 
+import com.google.common.base.Preconditions;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
 
@@ -37,6 +38,9 @@ public class ReflectiveToStringHelper {
      * @see #of(Object, Include)
      */
     private ReflectiveToStringHelper(final Class<?> clazz, final Object instance, final Include include) {
+        Preconditions.checkNotNull(clazz, "clazz was null");
+        Preconditions.checkNotNull(instance, "instance was null");
+        Preconditions.checkNotNull(include, "include was null");
         this.clazz = clazz;
         this.instance = instance;
         this.include = include;
@@ -65,6 +69,8 @@ public class ReflectiveToStringHelper {
      * @see #of(Object)
      */
     public static ReflectiveToStringHelper of(final Object o, final Include include) {
+        Preconditions.checkNotNull(o, "o was null");
+        Preconditions.checkNotNull(include, "include was null");
         return new ReflectiveToStringHelper(o.getClass(), o, include);
     }
 
@@ -251,6 +257,7 @@ public class ReflectiveToStringHelper {
      * @return this
      */
     public ReflectiveToStringHelper equality(final String equality) {
+        Preconditions.checkNotNull(equality, "equality was null");
         this.equality = equality;
         return this;
     }
@@ -289,6 +296,7 @@ public class ReflectiveToStringHelper {
      * @return this
      */
     public ReflectiveToStringHelper separator(final String separator) {
+        Preconditions.checkNotNull(separator, "separator was null");
         this.separator = separator;
         return this;
     }
@@ -401,6 +409,7 @@ public class ReflectiveToStringHelper {
          * @see #remove(String)
          */
         public Include custom(final String key, final Object value) {
+            Preconditions.checkNotNull(key, "key was null");
             this.custom.put(key, value);
             return this;
         }
@@ -414,6 +423,8 @@ public class ReflectiveToStringHelper {
          * @return this
          */
         public Include ensure(final String name, final Class<?> clazz, final Object value) {
+            Preconditions.checkNotNull(name, "name was null");
+            Preconditions.checkNotNull(clazz, "clazz was null");
             this.ensureNamesClassesAndValues.put(name, new Tuple<>(clazz, value));
             return this;
         }
@@ -425,6 +436,7 @@ public class ReflectiveToStringHelper {
          * @return this
          */
         public Include ensure(final Class<?> clazz) {
+            Preconditions.checkNotNull(clazz, "clazz was null");
             this.ensureClasses.add(clazz);
             return this;
         }
@@ -436,6 +448,7 @@ public class ReflectiveToStringHelper {
          * @return this
          */
         public Include ensure(final String name) {
+            Preconditions.checkNotNull(name, "name was null");
             this.ensureNames.add(name);
             return this;
         }
@@ -448,6 +461,8 @@ public class ReflectiveToStringHelper {
          * @return this
          */
         public Include ensure(final String name, final Class<?> clazz) {
+            Preconditions.checkNotNull(name, "name was null");
+            Preconditions.checkNotNull(clazz, "clazz was null");
             this.ensureNamesAndClasses.put(name, clazz);
             return this;
         }
@@ -472,6 +487,8 @@ public class ReflectiveToStringHelper {
          * @return this
          */
         public Include exclude(final String name, final Class<?> clazz, final Object value) {
+            Preconditions.checkNotNull(name, "name was null");
+            Preconditions.checkNotNull(clazz, "clazz was null");
             this.excludeNamesClassesAndValues.put(name, new Tuple<>(clazz, value));
             return this;
         }
@@ -483,6 +500,7 @@ public class ReflectiveToStringHelper {
          * @return this
          */
         public Include exclude(final Class<?> clazz) {
+            Preconditions.checkNotNull(clazz, "clazz was null");
             this.excludeClasses.add(clazz);
             return this;
         }
@@ -494,6 +512,7 @@ public class ReflectiveToStringHelper {
          * @return this
          */
         public Include exclude(final String name) {
+            Preconditions.checkNotNull(name, "name was null");
             this.excludeNames.add(name);
             return this;
         }
@@ -506,6 +525,8 @@ public class ReflectiveToStringHelper {
          * @return this
          */
         public Include exclude(final String name, final Class<?> clazz) {
+            Preconditions.checkNotNull(name, "name was null");
+            Preconditions.checkNotNull(clazz, "clazz was null");
             this.excludeNamesAndClasses.put(name, clazz);
             return this;
         }
@@ -529,6 +550,7 @@ public class ReflectiveToStringHelper {
          * @return this
          */
         public Include ignore(final Class<?> clazz) {
+            Preconditions.checkNotNull(clazz, "clazz was null");
             this.ensureClasses.remove(clazz);
             this.excludeClasses.remove(clazz);
             return this;
@@ -542,6 +564,7 @@ public class ReflectiveToStringHelper {
          * @return this
          */
         public Include ignore(final String name) {
+            Preconditions.checkNotNull(name, "name was null");
             this.ensureNames.remove(name);
             this.excludeNames.remove(name);
             this.ensureNamesAndClasses.remove(name);
@@ -610,6 +633,8 @@ public class ReflectiveToStringHelper {
          * @return this
          */
         public Include map(final String originalName, final String newName) {
+            Preconditions.checkNotNull(originalName, "originalName was null");
+            Preconditions.checkNotNull(newName, "newName was null");
             this.mappedNames.put(originalName, newName);
             return this;
         }
@@ -688,6 +713,7 @@ public class ReflectiveToStringHelper {
          * @see #custom(String, Object)
          */
         public Include remove(final String key) {
+            Preconditions.checkNotNull(key, "key was null");
             this.custom.remove(key);
             return this;
         }
@@ -699,6 +725,7 @@ public class ReflectiveToStringHelper {
          * @return this
          */
         public Include unmap(final String originalName) {
+            Preconditions.checkNotNull(originalName, "originalName was null");
             this.mappedNames.remove(originalName);
             return this;
         }
