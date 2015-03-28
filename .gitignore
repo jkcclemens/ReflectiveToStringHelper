@@ -1,0 +1,5 @@
+*.class
+*.jar
+*.iml
+.DS_Store
+.localized

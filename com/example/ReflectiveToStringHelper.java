@@ -1,12 +1,17 @@
+package com.example;
+
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
 
 import java.lang.reflect.Field;
 import java.lang.reflect.Modifier;
+import java.util.Arrays;
+import java.util.Comparator;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Objects;
+import java.util.stream.Collectors;
 
 /**
  * A class similar to {@link com.google.common.base.MoreObjects.ToStringHelper}, but it auto-populates the String using
@@ -18,6 +23,7 @@ public class ReflectiveToStringHelper {
     private final Object instance;
     private final Include include;
     private final StringBuilder sb = new StringBuilder();
+    private final Comparator<? super Field> comparator;
 
     /**
      * Should not be constructed during runtime.
@@ -25,10 +31,11 @@ public class ReflectiveToStringHelper {
      * @see #of(Object)
      * @see #of(Object, Include)
      */
-    private ReflectiveToStringHelper(final Class<?> clazz, final Object instance, final Include include) {
+    private ReflectiveToStringHelper(final Class<?> clazz, final Object instance, final Include include, final Comparator<? super Field> comparator) {
         this.clazz = clazz;
         this.instance = instance;
         this.include = include;
+        this.comparator = comparator;
     }
 
     /**
@@ -39,8 +46,32 @@ public class ReflectiveToStringHelper {
      * @return toString String, ready for returning
      * @see #of(Object, Include)
      */
-    private static String of(final Object o) {
+    public static String of(final Object o) {
         return ReflectiveToStringHelper.of(o, Include.create().publics(true));
+    }
+
+    /**
+     * Returns a toString String for the given object, showing fields sorted by {@code comparator}, specified by
+     * {@code include}.
+     *
+     * @param o          Object to generate toString for
+     * @param include    Include object
+     * @param comparator Comparator to sort the fields
+     * @return toString String, ready for returning
+     */
+    public static String of(final Object o, final Include include, final Comparator<? super Field> comparator) {
+        return new ReflectiveToStringHelper(o.getClass(), o, include, comparator).generate();
+    }
+
+    /**
+     * Returns a toString String for the given object, showing public fields sorted by {@code comparator}.
+     *
+     * @param o          Object to generate toString for
+     * @param comparator Comparator to sort the fields
+     * @return toString String, ready for returning
+     */
+    public static String of(final Object o, final Comparator<? super Field> comparator) {
+        return ReflectiveToStringHelper.of(o, Include.create().publics(true), comparator);
     }
 
     /**
@@ -51,8 +82,8 @@ public class ReflectiveToStringHelper {
      * @return toString String, ready for returning
      * @see #of(Object)
      */
-    private static String of(final Object o, final Include include) {
-        return new ReflectiveToStringHelper(o.getClass(), o, include).generate();
+    public static String of(final Object o, final Include include) {
+        return new ReflectiveToStringHelper(o.getClass(), o, include, null).generate();
     }
 
     /**
@@ -67,7 +98,13 @@ public class ReflectiveToStringHelper {
      * <p>Note that this does not add "&#123;" or "&#125;".
      */
     private void appendDeclaredFields() {
-        final Field[] fields = this.clazz.getDeclaredFields();
+        final Field[] fieldArray = this.clazz.getDeclaredFields();
+        final List<Field> fields;
+        if (this.comparator != null) {
+            fields = Arrays.stream(fieldArray).sorted(this.comparator).collect(Collectors.toList());
+        } else {
+            fields = Arrays.asList(fieldArray);
+        }
         int appended = 0;
         for (final Field field : fields) {
             final Tuple<Object, Throwable> value = this.getFieldValue(field);
